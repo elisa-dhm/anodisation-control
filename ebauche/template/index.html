@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Eloxage 26</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            text-align: center;
+            margin-top: 60px;
+        }
+
+        button {
+            font-size: 24px;
+            padding: 20px;
+            margin: 10px;
+            border-radius: 10px;
+            width: 200px;
+        }
+
+        .avance { background: green; color: white; }
+        .recul { background: red; color: white; }
+        .stop { background: black; color: white; }
+
+        #status {
+            margin-top: 30px;
+            font-size: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>Machine Eloxage 26</h1>
+
+<button class="avance" onclick="sendCommand('avance')">Avancer</button>
+<button class="recul" onclick="sendCommand('recul')">Reculer</button>
+<button class="stop" onclick="sendCommand('stop')">STOP</button>
+
+<div id="status">En attente...</div>
+
+<script>
+function sendCommand(cmd) {
+
+    fetch('/mode/' + cmd)
+        .then(response => response.text())
+        .then(data => {
+            document.getElementById("status").innerHTML = data;
+        })
+        .catch(error => {
+            document.getElementById("status").innerHTML = "Erreur connexion";
+        });
+}
+</script>
+
+</body>
+</html>
