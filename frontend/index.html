@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Machine Éloxage</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: "Segoe UI";
+    background: #12121a;
+    color: white;
+}
+
+.header {
+    background: #1f1f2e;
+    padding: 15px;
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    padding: 15px;
+}
+
+.card {
+    background: #1e1e2f;
+    padding: 15px;
+    border-radius: 12px;
+}
+
+.status {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.running { color: #2ecc71; }
+.stopped { color: #e74c3c; }
+.error { color: #f1c40f; }
+
+canvas {
+    width: 100%;
+    height: 320px;
+    background: #0f0f1a;
+    border-radius: 10px;
+}
+
+button {
+    padding: 12px 25px;
+    margin: 5px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.start { background: #27ae60; }
+.stop { background: #c0392b; }
+.reset { background: #f39c12; }
+.home { background: #2980b9; }
+
+.controls {
+    grid-column: span 2;
+    text-align: center;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">🧪 MACHINE ÉLOXAGE</div>
+
+<div class="container">
+
+    <!-- ETAT -->
+    <div class="card">
+        <h2>État</h2>
+        <div id="state" class="status">---</div>
+        <p>Bac : <span id="index">-</span></p>
+        <p>Running : <span id="running">-</span></p>
+    </div>
+
+    <!-- POSITION -->
+    <div class="card">
+        <h2>Position XY</h2>
+        <p>X : <span id="x">0</span></p>
+        <p>Y : <span id="y">0</span></p>
+    </div>
+
+    <!-- SIMULATION -->
+    <div class="card" style="grid-column: span 2;">
+        <h2>Simulation machine</h2>
+        <canvas id="sim"></canvas>
+    </div>
+
+    <!-- CONTROLS -->
+    <div class="controls card">
+        <button class="start" onclick="fetch('/start',{method:'POST'})">START</button>
+        <button class="stop" onclick="fetch('/stop',{method:'POST'})">STOP</button>
+        <button class="reset" onclick="fetch('/reset',{method:'POST'})">RESET</button>
+        <button class="home" onclick="fetch('/home',{method:'POST'})">HOME</button>
+    </div>
+
+</div>
+
+<script>
+
+const canvas = document.getElementById("sim");
+const ctx = canvas.getContext("2d");
+
+const MACHINE_WIDTH_MM = 10000;
+const MACHINE_HEIGHT_MM = 10000;
+
+const CANVAS_W = 600;
+const CANVAS_H = 300;
+
+const SCALE_X = CANVAS_W / MACHINE_WIDTH_MM;
+const SCALE_Y = CANVAS_H / MACHINE_HEIGHT_MM;
+
+function clamp(v, min, max){
+	return Math.max(min, Math.min(min,v));
+}
+
+// smooth position
+let px = 0;
+let py = 0;
+
+function draw(x, y) {
+
+    px += (x - px) * 0.2;
+    py += (y - py) * 0.2;
+
+    px = clamp(px, 0, MACHINE_WIDTH_MM);
+    py = clamp(py, 0, MACHINE_HEIGHT_MM);
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // bacs (en mm)
+    const bacs = [
+        {x: 50, y: 50},
+        {x: 150, y: 50},
+        {x: 250, y: 50},
+        {x: 50, y: 150},
+        {x: 150, y: 150}
+    ];
+
+    ctx.fillStyle = "#444";
+    bacs.forEach(b => {
+        ctx.fillRect(
+            b.x * SCALE_X,
+            b.y * SCALE_Y,
+            20, 20
+        );
+    });
+
+    // pièce
+    ctx.fillStyle = "#00ffcc";
+    ctx.beginPath();
+    ctx.arc(
+        px * SCALE_X,
+        py * SCALE_Y,
+        8,
+        0,
+        Math.PI * 2
+    );
+    ctx.fill();
+}
+
+function update() {
+
+    fetch('/status')
+    .then(r => r.json())
+    .then(d => {
+
+        document.getElementById("state").innerText = d.state;
+        document.getElementById("index").innerText = d.index;
+        document.getElementById("running").innerText = d.running;
+
+        document.getElementById("x").innerText = d.x;
+        document.getElementById("y").innerText = d.y;
+
+        draw(d.x, d.y);
+
+    });
+}
+
+setInterval(update, 100);
+
+</script>
+
+</body>
+</html>
