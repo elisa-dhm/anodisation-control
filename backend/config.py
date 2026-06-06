@@ -1,39 +1,33 @@
-# =========================
 # GPIO
-# =========================
 X_STEP = 17
 X_DIR  = 27
 
 Y_STEP = 22
 Y_DIR  = 23
 
-ENABLE_PIN = 8   # 🔴 à ajouter si pas déjà
+Z_STEP = 10
+Z_DIR  = 9
 
-# =========================
-# FIN DE COURSE
-# =========================
-ENDSTOP_X = 5
-ENDSTOP_Y = 6
+ENABLE_PIN = 8
 
-# =========================
-# MOTEUR / CINÉMATIQUE
-# =========================
-MM_PER_STEP = 0.01   # 100 steps/mm
+# ENDSTOPS
+ENDSTOP_X = 16
+ENDSTOP_Y = 5
+ENDSTOP_Z = 24
 
-# =========================
-# VITESSE
-# =========================
-STEP_DELAY_MIN = 0.00002   # rapide
-STEP_DELAY_MAX = 0.0002    # lent (accélération)
+# CINÉMATIQUE
+MM_PER_STEP = 0.0125   # GT2 + 20T + 1/4 microstep
 
-# =========================
+# VITESSE SAFE (IMPORTANT)
+STEP_DELAY_MIN = 0.00000002
+STEP_DELAY_MAX = 0.0000005
+
 # HOMING
-# =========================
-HOMING_DELAY = 0.0001
-HOMING_BACKOFF = 200
-HOMING_TIMEOUT = 10  # secondes
+HOMING_DELAY = 0.000005
+HOMING_TIMEOUT = 1000
 
-# =========================
+# IMMERSION (temps en secondes)
+IMMERSION_TIME = 5  # Temps par défaut que la pièce reste immergée au bain
+
 # SÉCURITÉ
-# =========================
-MAX_STEPS = 50000
+MAX_STEPS = 500000

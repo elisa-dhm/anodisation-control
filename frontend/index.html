@@ -1,195 +1,712 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<title>Machine Éloxage</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Système de Contrôle d'Anodisation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-<style>
-body {
-    margin: 0;
-    font-family: "Segoe UI";
-    background: #12121a;
-    color: white;
-}
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
 
-.header {
-    background: #1f1f2e;
-    padding: 15px;
-    text-align: center;
-    font-size: 24px;
-    font-weight: bold;
-}
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
 
-.container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    padding: 15px;
-}
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            text-align: center;
+        }
 
-.card {
-    background: #1e1e2f;
-    padding: 15px;
-    border-radius: 12px;
-}
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
 
-.status {
-    font-size: 20px;
-    font-weight: bold;
-}
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
 
-.running { color: #2ecc71; }
-.stopped { color: #e74c3c; }
-.error { color: #f1c40f; }
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 15px;
+        }
 
-canvas {
-    width: 100%;
-    height: 320px;
-    background: #0f0f1a;
-    border-radius: 10px;
-}
+        .status-badge.ready {
+            background: #d4edda;
+            color: #155724;
+        }
 
-button {
-    padding: 12px 25px;
-    margin: 5px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-}
+        .status-badge.running {
+            background: #cfe2ff;
+            color: #084298;
+        }
 
-.start { background: #27ae60; }
-.stop { background: #c0392b; }
-.reset { background: #f39c12; }
-.home { background: #2980b9; }
+        .status-badge.error {
+            background: #f8d7da;
+            color: #842029;
+        }
 
-.controls {
-    grid-column: span 2;
-    text-align: center;
-}
-</style>
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h2 {
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-icon {
+            width: 24px;
+            height: 24px;
+            background: #667eea;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .control-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            grid-column: 1 / -1;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(17, 153, 142, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);
+            color: white;
+            grid-column: 1 / -1;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(238, 9, 121, 0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            grid-column: 1 / -1;
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(245, 87, 108, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .position-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+        }
+
+        .position-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid #667eea;
+        }
+
+        .position-label {
+            color: #666;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .position-value {
+            color: #333;
+            font-size: 24px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
+
+        .position-unit {
+            color: #999;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .info-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #764ba2;
+        }
+
+        .info-label {
+            color: #666;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .info-value {
+            color: #333;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .error-alert {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            color: #842029;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+            margin-bottom: 20px;
+        }
+
+        .error-alert.show {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .error-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .manual-control {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .input-group label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .input-group input {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 8px rgba(102, 126, 234, 0.2);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .manual-control {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .status-dot.idle {
+            background: #6c757d;
+            animation: none;
+        }
+
+        .status-dot.running {
+            background: #28a745;
+        }
+
+        .status-dot.error {
+            background: #dc3545;
+            animation: pulse-red 0.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes pulse-red {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+    </style>
 </head>
-
 <body>
+    <div class="container">
+        <div class="header">
+            <h1>༼ つ ◕_◕ ༽つ Système de Contrôle d'Anodisation ༼ つ ◕_◕ ༽つ</h1>
+            <p>Interface de gestion des moteurs CNC</p>
+            <div class="status-badge" id="statusBadge">
+                <span class="status-dot idle" id="statusDot"></span>
+                <span id="statusText">Initialisation...</span>
+            </div>
+        </div>
 
-<div class="header">🧪 MACHINE ÉLOXAGE</div>
+        <div class="error-alert" id="errorAlert">
+            <div class="error-title">୧༼ಠ益ಠ༽୨ Erreur</div>
+            <div id="errorMessage"></div>
+        </div>
 
-<div class="container">
+        <div class="grid">
+            <div class="card">
+                <h2>
+                    <div class="card-icon">★</div>
+                    Contrôle Principal
+                </h2>
+                <div class="control-section">
+                    <div class="button-group">
+                        <button class="btn-primary" id="homeBtn" onclick="performHoming()">
+                            🏠︎ Homing
+                        </button>
+                        <button class="btn-primary" id="resetBtn" onclick="resetMachine()">
+                            ↺ Reset
+                        </button>
+                    </div>
+                    <button class="btn-success" id="startBtn" onclick="startMachine()">
+                        ▶ Démarrer
+                    </button>
+                    <button class="btn-danger" id="stopBtn" onclick="stopMachine()" disabled>
+                        ⏹ Arrêter
+                    </button>
+                </div>
+            </div>
 
-    <!-- ETAT -->
-    <div class="card">
-        <h2>État</h2>
-        <div id="state" class="status">---</div>
-        <p>Bac : <span id="index">-</span></p>
-        <p>Running : <span id="running">-</span></p>
+            <div class="card">
+                <h2>
+                    <div class="card-icon">⚲</div>
+                    Position Actuelle
+                </h2>
+                <div class="position-grid">
+                    <div class="position-item">
+                        <div class="position-label">Axe X</div>
+                        <div class="position-value" id="posX">0</div>
+                        <div class="position-unit">steps</div>
+                    </div>
+                    <div class="position-item">
+                        <div class="position-label">Axe Y</div>
+                        <div class="position-value" id="posY">0</div>
+                        <div class="position-unit">steps</div>
+                    </div>
+                    <div class="position-item">
+                        <div class="position-label">Axe Z</div>
+                        <div class="position-value" id="posZ">0</div>
+                        <div class="position-unit">steps</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>
+                    <div class="card-icon">ℹ</div>
+                    État du Système
+                </h2>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Homé</div>
+                        <div class="info-value" id="infoHomed">✗ Non</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Exécution</div>
+                        <div class="info-value" id="infoRunning">⏸ Arrêtée</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Bain Actuel</div>
+                        <div class="info-value" id="infoBac">-</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Temps Immersion</div>
+                        <div class="info-value" id="infoImmersion">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>
+                <div class="card-icon">🛠</div>
+                Mouvement Manuel
+            </h2>
+            <p style="color: #666; font-size: 12px; margin-bottom: 15px;">
+                Saisissez les coordonnées (en steps) et cliquez sur "Déplacer"
+            </p>
+            <div class="manual-control">
+                <div class="input-group">
+                    <label for="manualX">Position X</label>
+                    <input type="number" id="manualX" placeholder="0" value="0">
+                </div>
+                <div class="input-group">
+                    <label for="manualY">Position Y</label>
+                    <input type="number" id="manualY" placeholder="0" value="0">
+                </div>
+                <div class="input-group">
+                    <label for="manualZ">Position Z</label>
+                    <input type="number" id="manualZ" placeholder="0" value="0">
+                </div>
+            </div>
+            <button class="btn-primary" style="width: 100%" onclick="performManualMove()">
+                → Déplacer
+            </button>
+        </div>
     </div>
 
-    <!-- POSITION -->
-    <div class="card">
-        <h2>Position XY</h2>
-        <p>X : <span id="x">0</span></p>
-        <p>Y : <span id="y">0</span></p>
-    </div>
+    <script>
+        // ========================================
+        // CONFIGURATION MODIFIABLE
+        // ========================================
+        // 🔧 URL de l'API - utilise le même domaine/IP que le frontend
+        const API_URL = "";  // Vide = même serveur. Sinon: "http://192.168.1.100:5000"
+        const REFRESH_INTERVAL = 500; // ms - Fréquence de mise à jour de l'interface
 
-    <!-- SIMULATION -->
-    <div class="card" style="grid-column: span 2;">
-        <h2>Simulation machine</h2>
-        <canvas id="sim"></canvas>
-    </div>
+        // ========================================
+        // GESTION DES APPELS API
+        // ========================================
 
-    <!-- CONTROLS -->
-    <div class="controls card">
-        <button class="start" onclick="fetch('/start',{method:'POST'})">START</button>
-        <button class="stop" onclick="fetch('/stop',{method:'POST'})">STOP</button>
-        <button class="reset" onclick="fetch('/reset',{method:'POST'})">RESET</button>
-        <button class="home" onclick="fetch('/home',{method:'POST'})">HOME</button>
-    </div>
+        /**
+         * Effectuer une requête API
+         * @param {string} endpoint - L'endpoint API
+         * @param {string} method - GET, POST, etc.
+         */
+        async function apiCall(endpoint, method = "GET") {
+            try {
+                const response = await fetch(`${API_URL}${endpoint}`, {
+                    method: method,
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                });
+                return await response.json();
+            } catch (error) {
+                showError(`Erreur de connexion: ${error.message}`);
+                console.error(error);
+                return null;
+            }
+        }
 
-</div>
+        /**
+         * Effectuer une requête API avec body
+         */
+        async function apiCallWithBody(endpoint, body = {}) {
+            try {
+                const response = await fetch(`${API_URL}${endpoint}`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(body)
+                });
+                return await response.json();
+            } catch (error) {
+                showError(`Erreur de connexion: ${error.message}`);
+                console.error(error);
+                return null;
+            }
+        }
 
-<script>
+        // ========================================
+        // COMMANDES MACHINE
+        // ========================================
 
-const canvas = document.getElementById("sim");
-const ctx = canvas.getContext("2d");
+        /**
+         * Effectuer le homing des moteurs
+         */
+        async function performHoming() {
+            const btn = document.getElementById("homeBtn");
+            btn.disabled = true;
+            btn.innerHTML = '🏠︎ Homing <span class="spinner"></span>';
 
-const MACHINE_WIDTH_MM = 10000;
-const MACHINE_HEIGHT_MM = 10000;
+            const result = await apiCall("/api/homing", "POST");
+            
+            if (result) {
+                updateStatus();
+                hideError();
+            }
 
-const CANVAS_W = 600;
-const CANVAS_H = 300;
+            btn.disabled = false;
+            btn.innerHTML = '🏠︎ Homing';
+        }
 
-const SCALE_X = CANVAS_W / MACHINE_WIDTH_MM;
-const SCALE_Y = CANVAS_H / MACHINE_HEIGHT_MM;
+        /**
+         * Démarrer la machine
+         */
+        async function startMachine() {
+            const result = await apiCall("/api/start", "POST");
+            if (result) {
+                updateStatus();
+                hideError();
+            }
+        }
 
-function clamp(v, min, max){
-	return Math.max(min, Math.min(min,v));
-}
+        /**
+         * Arrêter la machine
+         */
+        async function stopMachine() {
+            const result = await apiCall("/api/stop", "POST");
+            if (result) {
+                updateStatus();
+                hideError();
+            }
+        }
 
-// smooth position
-let px = 0;
-let py = 0;
+        /**
+         * Réinitialiser la machine
+         */
+        async function resetMachine() {
+            const result = await apiCall("/api/reset", "POST");
+            if (result) {
+                updateStatus();
+                hideError();
+            }
+        }
 
-function draw(x, y) {
+        /**
+         * Effectuer un mouvement manuel
+         */
+        async function performManualMove() {
+            const x = parseInt(document.getElementById("manualX").value) || 0;
+            const y = parseInt(document.getElementById("manualY").value) || 0;
+            const z = parseInt(document.getElementById("manualZ").value) || 0;
 
-    px += (x - px) * 0.2;
-    py += (y - py) * 0.2;
+            const result = await apiCallWithBody("/api/move", { x, y, z });
+            if (result) {
+                hideError();
+            }
+        }
 
-    px = clamp(px, 0, MACHINE_WIDTH_MM);
-    py = clamp(py, 0, MACHINE_HEIGHT_MM);
+        // ========================================
+        // MISE À JOUR DE L'INTERFACE
+        // ========================================
 
-    ctx.clearRect(0,0,canvas.width,canvas.height);
+        /**
+         * Mettre à jour l'état du système
+         */
+        async function updateStatus() {
+            const data = await apiCall("/api/status");
+            
+            if (!data) return;
 
-    // bacs (en mm)
-    const bacs = [
-        {x: 50, y: 50},
-        {x: 150, y: 50},
-        {x: 250, y: 50},
-        {x: 50, y: 150},
-        {x: 150, y: 150}
-    ];
+            // Position
+            document.getElementById("posX").textContent = data.position.x;
+            document.getElementById("posY").textContent = data.position.y;
+            document.getElementById("posZ").textContent = data.position.z;
 
-    ctx.fillStyle = "#444";
-    bacs.forEach(b => {
-        ctx.fillRect(
-            b.x * SCALE_X,
-            b.y * SCALE_Y,
-            20, 20
-        );
-    });
+            // Info système
+            document.getElementById("infoHomed").textContent = data.homed ? "✅ Oui" : "❌ Non";
+            document.getElementById("infoRunning").textContent = data.running ? "▶️ En cours" : "⏸️ Arrêtée";
+            document.getElementById("infoBac").textContent = data.current_bac + 1;
+            document.getElementById("infoImmersion").textContent = data.config.immersion_time + "s";
 
-    // pièce
-    ctx.fillStyle = "#00ffcc";
-    ctx.beginPath();
-    ctx.arc(
-        px * SCALE_X,
-        py * SCALE_Y,
-        8,
-        0,
-        Math.PI * 2
-    );
-    ctx.fill();
-}
+            // Statut badge
+            const badge = document.getElementById("statusBadge");
+            const dot = document.getElementById("statusDot");
+            const text = document.getElementById("statusText");
 
-function update() {
+            if (data.error) {
+                badge.className = "status-badge error";
+                dot.className = "status-dot error";
+                text.textContent = "Erreur";
+                showError(data.error);
+            } else if (data.homed) {
+                if (data.running) {
+                    badge.className = "status-badge running";
+                    dot.className = "status-dot running";
+                    text.textContent = "Exécution en cours";
+                } else {
+                    badge.className = "status-badge ready";
+                    dot.className = "status-dot idle";
+                    text.textContent = "Prêt";
+                }
+            } else {
+                badge.className = "status-badge";
+                dot.className = "status-dot idle";
+                text.textContent = "Non homé";
+            }
 
-    fetch('/status')
-    .then(r => r.json())
-    .then(d => {
+            // Gestion boutons
+            const startBtn = document.getElementById("startBtn");
+            const stopBtn = document.getElementById("stopBtn");
+            const homeBtn = document.getElementById("homeBtn");
 
-        document.getElementById("state").innerText = d.state;
-        document.getElementById("index").innerText = d.index;
-        document.getElementById("running").innerText = d.running;
+            startBtn.disabled = !data.homed || data.running;
+            stopBtn.disabled = !data.running;
+            homeBtn.disabled = data.running;
+        }
 
-        document.getElementById("x").innerText = d.x;
-        document.getElementById("y").innerText = d.y;
+        /**
+         * Afficher message d'erreur
+         */
+        function showError(message) {
+            const alert = document.getElementById("errorAlert");
+            const msg = document.getElementById("errorMessage");
+            msg.textContent = message;
+            alert.classList.add("show");
+        }
 
-        draw(d.x, d.y);
+        /**
+         * Masquer message d'erreur
+         */
+        function hideError() {
+            const alert = document.getElementById("errorAlert");
+            alert.classList.remove("show");
+        }
 
-    });
-}
+        // ========================================
+        // INITIALISATION
+        // ========================================
 
-setInterval(update, 100);
+        updateStatus();
+        setInterval(updateStatus, REFRESH_INTERVAL);
 
-</script>
-
+        console.log("✓ Interface chargée - Connexion à : " + API_URL);
+    </script>
 </body>
 </html>

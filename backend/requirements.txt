@@ -1,0 +1,13 @@
+# ================================================
+# DÉPENDANCES DU SYSTÈME DE CONTRÔLE D'ANODISATION
+# ================================================
+# Installation : pip install -r requirements.txt
+
+Flask==2.3.2
+Flask-CORS==4.0.0
+RPi.GPIO==0.7.1
+
+# Notes:
+# - RPi.GPIO : Bibliothèque GPIO pour Raspberry Pi
+# - Flask : Framework web léger
+# - Flask-CORS : Support des requêtes cross-origin (nécessaire pour le frontend)

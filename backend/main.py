@@ -1,65 +1,106 @@
-from flask import Flask, send_from_directory, jsonify
+"""
+===============================================
+SYSTÈME DE CONTRÔLE D'ANODISATION
+===============================================
+Application Flask pour contrôler le système CNC d'anodisation
+
+PARAMÈTRES MODIFIABLES :
+- Port serveur : ligne 152 (port=5000)
+- Adresse serveur : ligne 151 (host="0.0.0.0")
+- Voir config.py pour les paramètres moteurs/timing
+"""
+
+from flask import Flask, jsonify, send_from_directory
+from flask_cors import CORS
 import logging
-import os
-import RPi.GPIO as GPIO
 import atexit
+import pigpio
+from datetime import datetime
+import os
 
 from motor.controller import CNCController
 from motor.worker import MotorWorker
 from core.state_machine import StateMachine
 from routes.move import init_routes
 
-# ---------------- LOGS ----------------
+# ============================================
+# CONFIGURATION DU LOGGING
+# ============================================
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s"
+    format='%(asctime)s - %(levelname)s - %(message)s'
 )
+logger = logging.getLogger(__name__)
 
-logging.info("Démarrage MACHINE ÉLOXAGE")
+# ============================================
+# INITIALISATION FLASK ET COMPOSANTS
+# ============================================
+# Construire le chemin vers le dossier frontend de maniere robuste
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FRONTEND_DIR = os.path.join(BASE_DIR, 'frontend')
 
-# ---------------- FRONTEND ----------------
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-FRONTEND_DIR = os.path.abspath(os.path.join(BASE_DIR, "../frontend"))
+app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
+CORS(app)  # Autoriser les requetes cross-origin pour le frontend
 
-app = Flask(__name__, static_folder=FRONTEND_DIR)
-
-# ---------------- MACHINE ----------------
+# Initialisation du contrôleur CNC
 controller = CNCController()
 worker = MotorWorker(controller)
-state_machine = StateMachine(worker)
+sm = StateMachine(worker)
 
-# ---------------- ROUTES AUTO ----------------
-app.register_blueprint(init_routes(state_machine))
+# Enregistrer les routes de mouvement avec le préfixe /api/
+app.register_blueprint(init_routes(sm))
 
-# ---------------- FRONTEND ----------------
-@app.route("/")
-def index():
-    return send_from_directory(app.static_folder, "index.html")
+# ============================================
+# ROUTES PRINCIPALES
+# ============================================
 
-@app.route("/<path:path>")
-def static_files(path):
-    return send_from_directory(app.static_folder, path)
+@app.route("/", methods=["GET"])
+def root():
+    """Serve the frontend (index.html)"""
+    return send_from_directory(FRONTEND_DIR, "index.html")
 
-# ---------------- STATUS LIVE ----------------
-@app.route("/status")
-def status():
-    return jsonify(state_machine.status())
 
-# ---------------- TEST ----------------
-@app.route("/test")
-def test():
-    return "OK MACHINE CONNECTED"
+@app.route("/api/health", methods=["GET"])
+def health_check():
+    """Vérifier l'état de la machine"""
+    return jsonify({
+        "status": "OK",
+        "timestamp": datetime.now().isoformat()
+    }), 200
 
-# ---------------- CLEANUP ----------------
+
+# ============================================
+# GESTION DE L'ARRÊT PROPRE
+# ============================================
 def cleanup():
+    """Nettoyer les ressources pigpio à l'arrêt"""
+    logger.info("Nettoyage des ressources...")
     try:
-        GPIO.cleanup()
-        logging.info("GPIO CLEANUP OK")
+        from motor.driver import StepperDriver
+        if StepperDriver.pi is not None:
+            StepperDriver.pi.stop()
     except Exception as e:
-        logging.error(f"GPIO cleanup error: {e}")
+        logger.error(f"Erreur lors du nettoyage pigpio: {e}")
+
 
 atexit.register(cleanup)
 
-# ---------------- START ----------------
+# ============================================
+# POINT D'ENTRÉE
+# ============================================
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, threaded=True)
+    logger.info("========================================")
+    logger.info("Démarrage du système de contrôle")
+    logger.info("========================================")
+    logger.info(f"Serveur accessible à : http://0.0.0.0:5000")
+    logger.info("========================================")
+    
+    # ⚙️ PARAMÈTRES MODIFIABLES :
+    # Vous pouvez modifier ces paramètres selon vos besoins
+    app.run(
+        host="0.0.0.0",        # Adresse serveur (0.0.0.0 = accessible de partout)
+        port=5000,             # Port serveur (modifiez pour utiliser un autre port)
+        debug=False,           # Mode debug (False pour production)
+        threaded=False         # Mode multithread
+    )
+
